@@ -412,51 +412,78 @@ function renderResultados() {
 /* ══════════════════════════════════════════
    RENDER: GRUPOS — built from match data
 ══════════════════════════════════════════ */
+// Manual group map — free tier API doesn't return group field per match
+const GROUP_MAP = {
+  // Group A
+  'MEX':'A','ZAF':'A','KOR':'A','CZE':'A',
+  // Group B
+  'CAN':'B','BIH':'B','QAT':'B','SUI':'B',
+  // Group C
+  'BRA':'C','MAR':'C','HTI':'C','SCO':'C',
+  // Group D
+  'USA':'D','PRY':'D','AUS':'D','TUR':'D',
+  // Group E
+  'GER':'E','CUW':'E','CIV':'E','ECU':'E',
+  // Group F
+  'NED':'F','JPN':'F','SWE':'F','TUN':'F',
+  // Group G
+  'BEL':'G','EGY':'G','IRN':'G','NZL':'G',
+  // Group H
+  'ESP':'H','CPV':'H','KSA':'H','URU':'H',
+  // Group I
+  'FRA':'I','SEN':'I','IRQ':'I','NOR':'I',
+  // Group J
+  'ARG':'J','DZA':'J','AUT':'J','JOR':'J',
+  // Group K
+  'POR':'K','COD':'K','UZB':'K','COL':'K',
+  // Group L
+  'ENG':'L','CRO':'L','GHA':'L','PAN':'L',
+};
+
 function buildStandingsFromMatches() {
-  // Each match has m.group = "GROUP_A" etc and home/away team + score
-  const groups = {}; // "A" -> { teamTla -> row }
+  const groups = {};
 
   allMatches.forEach(m => {
-    if (!m.group || !m.group.startsWith('GROUP_')) return;
-    const gKey = m.group.replace('GROUP_', '');
-    if (!groups[gKey]) groups[gKey] = {};
-
     const htla = m.homeTeam?.tla;
     const atla = m.awayTeam?.tla;
     if (!htla || !atla) return;
 
-    // init team rows
-    [
-      { tla: htla, name: m.homeTeam?.shortName || m.homeTeam?.name, crest: m.homeTeam?.crest },
-      { tla: atla, name: m.awayTeam?.shortName || m.awayTeam?.name, crest: m.awayTeam?.crest },
-    ].forEach(({ tla, name }) => {
-      if (!groups[gKey][tla]) {
-        groups[gKey][tla] = { tla, name, played:0, won:0, draw:0, lost:0, gf:0, ga:0, pts:0 };
-      }
+    // use manual map if API group field is missing
+    const gKey = (m.group && m.group.startsWith('GROUP_'))
+      ? m.group.replace('GROUP_', '')
+      : (GROUP_MAP[htla] || GROUP_MAP[atla]);
+    if (!gKey) return;
+
+    if (!groups[gKey]) groups[gKey] = {};
+
+    [{tla:htla, name:m.homeTeam?.shortName||m.homeTeam?.name},
+     {tla:atla, name:m.awayTeam?.shortName||m.awayTeam?.name}]
+    .forEach(({tla, name}) => {
+      if (!groups[gKey][tla])
+        groups[gKey][tla] = {tla, name, played:0, won:0, draw:0, lost:0, gf:0, ga:0, pts:0};
     });
 
     if (m.status !== 'FINISHED') return;
     const hs = m.score?.fullTime?.home;
     const as = m.score?.fullTime?.away;
-    if (hs === null || hs === undefined || as === null || as === undefined) return;
+    if (hs == null || as == null) return;
 
     const h = groups[gKey][htla];
     const a = groups[gKey][atla];
-    h.played++; h.gf += hs; h.ga += as;
-    a.played++; a.gf += as; a.ga += hs;
+    h.played++; h.gf+=hs; h.ga+=as;
+    a.played++; a.gf+=as; a.ga+=hs;
     if (hs > as)      { h.won++; h.pts+=3; a.lost++; }
     else if (hs < as) { a.won++; a.pts+=3; h.lost++; }
     else              { h.draw++; h.pts+=1; a.draw++; a.pts+=1; }
   });
 
-  // sort each group
   const sorted = {};
   Object.keys(groups).sort().forEach(gKey => {
-    sorted[gKey] = Object.values(groups[gKey]).sort((a, b) => {
-      if (b.pts !== a.pts) return b.pts - a.pts;
-      const dgA = a.gf - a.ga, dgB = b.gf - b.ga;
-      if (dgB !== dgA) return dgB - dgA;
-      return b.gf - a.gf;
+    sorted[gKey] = Object.values(groups[gKey]).sort((a,b) => {
+      if (b.pts !== a.pts) return b.pts-a.pts;
+      const dgA=a.gf-a.ga, dgB=b.gf-b.ga;
+      if (dgB !== dgA) return dgB-dgA;
+      return b.gf-a.gf;
     });
   });
   return sorted;
