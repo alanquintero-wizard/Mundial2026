@@ -410,46 +410,101 @@ function renderResultados() {
 }
 
 /* ══════════════════════════════════════════
-   RENDER: GRUPOS
+   RENDER: GRUPOS — built from match data
 ══════════════════════════════════════════ */
+function buildStandingsFromMatches() {
+  // Each match has m.group = "GROUP_A" etc and home/away team + score
+  const groups = {}; // "A" -> { teamTla -> row }
+
+  allMatches.forEach(m => {
+    if (!m.group || !m.group.startsWith('GROUP_')) return;
+    const gKey = m.group.replace('GROUP_', '');
+    if (!groups[gKey]) groups[gKey] = {};
+
+    const htla = m.homeTeam?.tla;
+    const atla = m.awayTeam?.tla;
+    if (!htla || !atla) return;
+
+    // init team rows
+    [
+      { tla: htla, name: m.homeTeam?.shortName || m.homeTeam?.name, crest: m.homeTeam?.crest },
+      { tla: atla, name: m.awayTeam?.shortName || m.awayTeam?.name, crest: m.awayTeam?.crest },
+    ].forEach(({ tla, name }) => {
+      if (!groups[gKey][tla]) {
+        groups[gKey][tla] = { tla, name, played:0, won:0, draw:0, lost:0, gf:0, ga:0, pts:0 };
+      }
+    });
+
+    if (m.status !== 'FINISHED') return;
+    const hs = m.score?.fullTime?.home;
+    const as = m.score?.fullTime?.away;
+    if (hs === null || hs === undefined || as === null || as === undefined) return;
+
+    const h = groups[gKey][htla];
+    const a = groups[gKey][atla];
+    h.played++; h.gf += hs; h.ga += as;
+    a.played++; a.gf += as; a.ga += hs;
+    if (hs > as)      { h.won++; h.pts+=3; a.lost++; }
+    else if (hs < as) { a.won++; a.pts+=3; h.lost++; }
+    else              { h.draw++; h.pts+=1; a.draw++; a.pts+=1; }
+  });
+
+  // sort each group
+  const sorted = {};
+  Object.keys(groups).sort().forEach(gKey => {
+    sorted[gKey] = Object.values(groups[gKey]).sort((a, b) => {
+      if (b.pts !== a.pts) return b.pts - a.pts;
+      const dgA = a.gf - a.ga, dgB = b.gf - b.ga;
+      if (dgB !== dgA) return dgB - dgA;
+      return b.gf - a.gf;
+    });
+  });
+  return sorted;
+}
+
 function renderGrupos() {
-  if (!standings.length) {
-    document.getElementById('grupos-content').innerHTML = '<div class="empty">Sin datos de clasificación</div>';
+  if (!allMatches.length) {
+    document.getElementById('grupos-content').innerHTML = '<div class="empty">Sin datos</div>';
+    return;
+  }
+  const groups = buildStandingsFromMatches();
+  if (!Object.keys(groups).length) {
+    document.getElementById('grupos-content').innerHTML = '<div class="empty">Sin datos de grupos</div>';
     return;
   }
   let html = '';
-  standings.forEach(group => {
-    const name = group.group ? group.group.replace('GROUP_','GRUPO ') : group.stage;
+  Object.entries(groups).forEach(([gKey, rows]) => {
     html += `<div class="grupo-card">
       <div class="grupo-header">
-        <span class="grupo-name">${name}</span>
+        <span class="grupo-name">GRUPO ${gKey}</span>
         <span style="font-size:9px;color:var(--text3);">J · G · E · P · DG · PTS</span>
       </div>
       <table class="grupo-table"><tbody>`;
-    group.table.forEach((row, i) => {
+    rows.forEach((row, i) => {
       const qualify = i < 2;
-      const dg = row.goalsFor - row.goalsAgainst;
-      const f = flag(row.team?.tla || '');
+      const dg = row.gf - row.ga;
       html += `<tr class="${qualify ? 'qualify' : ''}">
         <td><div class="team-cell">
           <span class="pos">${i+1}</span>
-          <span class="flag-sm">${f}</span>
-          <span class="t-name">${row.team?.shortName || row.team?.name || '—'}</span>
+          <span class="flag-sm">${flag(row.tla)}</span>
+          <span class="t-name">${row.name || row.tla}</span>
         </div></td>
-        <td>${row.playedGames}</td>
+        <td>${row.played}</td>
         <td>${row.won}</td>
         <td>${row.draw}</td>
         <td>${row.lost}</td>
         <td style="color:${dg>0?'var(--green)':dg<0?'var(--red)':'var(--text2)'};">${dg>0?'+':''}${dg}</td>
-        <td class="pts">${row.points}</td>
+        <td class="pts">${row.pts}</td>
       </tr>`;
     });
     html += `</tbody></table>
-      <div class="qualify-note">✓ Clasifican top 2 · 8 mejores terceros también avanzan</div>
+      <div class="qualify-note">✓ Top 2 clasifican · 8 mejores terceros también avanzan</div>
     </div>`;
   });
   document.getElementById('grupos-content').innerHTML = html;
 }
+
+
 
 /* ══════════════════════════════════════════
    FETCH + REFRESH
@@ -477,9 +532,6 @@ async function refreshAll() {
     const mData = await apiFetch(`/competitions/${WC_ID}/matches?season=2026`);
     allMatches = (mData.matches || []).sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
 
-    // Fetch standings
-    const sData = await apiFetch(`/competitions/${WC_ID}/standings?season=2026`);
-    standings = sData.standings || [];
 
     lastUpdate = new Date();
     const timeStr = lastUpdate.toLocaleTimeString('es-MX', {hour:'2-digit', minute:'2-digit'});
