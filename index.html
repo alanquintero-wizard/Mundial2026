@@ -250,6 +250,41 @@ function formatDateLabel(str) {
 }
 
 /* ══════════════════════════════════════════
+   VENUE → CITY MAP (FIFA WC 2026)
+══════════════════════════════════════════ */
+const VENUE_CITY = {
+  // México
+  'Estadio Azteca': 'Ciudad de México 🇲🇽',
+  'Estadio AKRON': 'Guadalajara 🇲🇽',
+  'Estadio Guadalajara': 'Guadalajara 🇲🇽',
+  'Estadio Tecnológico': 'Monterrey 🇲🇽',
+  'Estadio BBVA': 'Monterrey 🇲🇽',
+  // EE.UU.
+  'SoFi Stadium': 'Los Ángeles 🇺🇸',
+  'Rose Bowl Stadium': 'Los Ángeles 🇺🇸',
+  'AT&T Stadium': 'Dallas 🇺🇸',
+  'MetLife Stadium': 'Nueva Jersey 🇺🇸',
+  'Levi\'s Stadium': 'San Francisco 🇺🇸',
+  'Hard Rock Stadium': 'Miami 🇺🇸',
+  'Arrowhead Stadium': 'Kansas City 🇺🇸',
+  'Lincoln Financial Field': 'Filadelfia 🇺🇸',
+  'Gillette Stadium': 'Boston 🇺🇸',
+  'NRG Stadium': 'Houston 🇺🇸',
+  'Mercedes-Benz Stadium': 'Atlanta 🇺🇸',
+  'Lumen Field': 'Seattle 🇺🇸',
+  // Canadá
+  'BMO Field': 'Toronto 🇨🇦',
+  'BC Place': 'Vancouver 🇨🇦',
+};
+
+function venueLabel(m) {
+  const v = m.venue || m.homeTeam?.venue || '';
+  if (!v) return '—';
+  const city = VENUE_CITY[v];
+  return city ? `${v} · ${city}` : v;
+}
+
+/* ══════════════════════════════════════════
    MATCH CARD RENDER
 ══════════════════════════════════════════ */
 function matchCard(m) {
@@ -294,7 +329,7 @@ function matchCard(m) {
       <div class="score-box">${scoreBlock}</div>
       <div class="team away"><div class="team-flag">${aFlag}</div><div class="team-name ${aw}">${aName}</div></div>
     </div>
-    <div class="match-footer">📍 ${m.venue || m.homeTeam?.venue || '—'}</div>
+    <div class="match-footer">📍 ${venueLabel(m)}</div>
   </div>`;
 }
 
