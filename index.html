@@ -250,38 +250,102 @@ function formatDateLabel(str) {
 }
 
 /* ══════════════════════════════════════════
-   VENUE → CITY MAP (FIFA WC 2026)
+   VENUE MAP — keyed by homeTeam+awayTeam TLA
+   since free tier doesn't return venue field
 ══════════════════════════════════════════ */
-const VENUE_CITY = {
-  // México
-  'Estadio Azteca': 'Ciudad de México 🇲🇽',
-  'Estadio AKRON': 'Guadalajara 🇲🇽',
-  'Estadio Guadalajara': 'Guadalajara 🇲🇽',
-  'Estadio Tecnológico': 'Monterrey 🇲🇽',
-  'Estadio BBVA': 'Monterrey 🇲🇽',
-  // EE.UU.
-  'SoFi Stadium': 'Los Ángeles 🇺🇸',
-  'Rose Bowl Stadium': 'Los Ángeles 🇺🇸',
-  'AT&T Stadium': 'Dallas 🇺🇸',
-  'MetLife Stadium': 'Nueva Jersey 🇺🇸',
-  'Levi\'s Stadium': 'San Francisco 🇺🇸',
-  'Hard Rock Stadium': 'Miami 🇺🇸',
-  'Arrowhead Stadium': 'Kansas City 🇺🇸',
-  'Lincoln Financial Field': 'Filadelfia 🇺🇸',
-  'Gillette Stadium': 'Boston 🇺🇸',
-  'NRG Stadium': 'Houston 🇺🇸',
-  'Mercedes-Benz Stadium': 'Atlanta 🇺🇸',
-  'Lumen Field': 'Seattle 🇺🇸',
-  // Canadá
-  'BMO Field': 'Toronto 🇨🇦',
-  'BC Place': 'Vancouver 🇨🇦',
+const MATCH_VENUE = {
+  // Grupo A
+  'MEX-ZAF': {stadium:'Estadio Azteca',        city:'Ciudad de México 🇲🇽'},
+  'KOR-CZE': {stadium:'Estadio AKRON',          city:'Guadalajara 🇲🇽'},
+  'CZE-ZAF': {stadium:'Mercedes-Benz Stadium',  city:'Atlanta 🇺🇸'},
+  'MEX-KOR': {stadium:'Estadio AKRON',          city:'Guadalajara 🇲🇽'},
+  'ZAF-KOR': {stadium:'Estadio Tecnológico',    city:'Monterrey 🇲🇽'},
+  'CZE-MEX': {stadium:'Estadio Azteca',         city:'Ciudad de México 🇲🇽'},
+  // Grupo B
+  'CAN-BIH': {stadium:'BMO Field',              city:'Toronto 🇨🇦'},
+  'QAT-SUI': {stadium:'Levi\'s Stadium',        city:'San Francisco 🇺🇸'},
+  'SUI-BIH': {stadium:'SoFi Stadium',           city:'Los Ángeles 🇺🇸'},
+  'CAN-QAT': {stadium:'BC Place',               city:'Vancouver 🇨🇦'},
+  'SUI-CAN': {stadium:'BC Place',               city:'Vancouver 🇨🇦'},
+  'BIH-QAT': {stadium:'Lumen Field',            city:'Seattle 🇺🇸'},
+  // Grupo C
+  'BRA-MAR': {stadium:'MetLife Stadium',        city:'Nueva Jersey 🇺🇸'},
+  'HTI-SCO': {stadium:'Gillette Stadium',       city:'Boston 🇺🇸'},
+  'SCO-MAR': {stadium:'Gillette Stadium',       city:'Boston 🇺🇸'},
+  'BRA-HTI': {stadium:'Lincoln Financial Field',city:'Filadelfia 🇺🇸'},
+  'MAR-HTI': {stadium:'Mercedes-Benz Stadium',  city:'Atlanta 🇺🇸'},
+  'BRA-SCO': {stadium:'Hard Rock Stadium',      city:'Miami 🇺🇸'},
+  // Grupo D
+  'USA-PRY': {stadium:'SoFi Stadium',           city:'Los Ángeles 🇺🇸'},
+  'AUS-TUR': {stadium:'BC Place',               city:'Vancouver 🇨🇦'},
+  'USA-AUS': {stadium:'Lumen Field',            city:'Seattle 🇺🇸'},
+  'TUR-PRY': {stadium:'Levi\'s Stadium',        city:'San Francisco 🇺🇸'},
+  'PRY-AUS': {stadium:'Levi\'s Stadium',        city:'San Francisco 🇺🇸'},
+  'TUR-USA': {stadium:'SoFi Stadium',           city:'Los Ángeles 🇺🇸'},
+  // Grupo E
+  'GER-CUW': {stadium:'NRG Stadium',            city:'Houston 🇺🇸'},
+  'CIV-ECU': {stadium:'Lincoln Financial Field',city:'Filadelfia 🇺🇸'},
+  'GER-CIV': {stadium:'BMO Field',              city:'Toronto 🇨🇦'},
+  'ECU-CUW': {stadium:'Arrowhead Stadium',      city:'Kansas City 🇺🇸'},
+  'CUW-CIV': {stadium:'Lincoln Financial Field',city:'Filadelfia 🇺🇸'},
+  'ECU-GER': {stadium:'Arrowhead Stadium',      city:'Kansas City 🇺🇸'},
+  // Grupo F
+  'NED-JPN': {stadium:'AT&T Stadium',           city:'Dallas 🇺🇸'},
+  'SWE-TUN': {stadium:'Estadio Tecnológico',    city:'Monterrey 🇲🇽'},
+  'NED-SWE': {stadium:'NRG Stadium',            city:'Houston 🇺🇸'},
+  'TUN-JPN': {stadium:'Estadio Tecnológico',    city:'Monterrey 🇲🇽'},
+  'JPN-SWE': {stadium:'AT&T Stadium',           city:'Dallas 🇺🇸'},
+  'TUN-NED': {stadium:'Arrowhead Stadium',      city:'Kansas City 🇺🇸'},
+  // Grupo G
+  'BEL-EGY': {stadium:'Lumen Field',            city:'Seattle 🇺🇸'},
+  'IRN-NZL': {stadium:'SoFi Stadium',           city:'Los Ángeles 🇺🇸'},
+  'BEL-IRN': {stadium:'SoFi Stadium',           city:'Los Ángeles 🇺🇸'},
+  'NZL-EGY': {stadium:'BC Place',               city:'Vancouver 🇨🇦'},
+  'EGY-IRN': {stadium:'Lumen Field',            city:'Seattle 🇺🇸'},
+  'NZL-BEL': {stadium:'BC Place',               city:'Vancouver 🇨🇦'},
+  // Grupo H
+  'ESP-CPV': {stadium:'Mercedes-Benz Stadium',  city:'Atlanta 🇺🇸'},
+  'KSA-URU': {stadium:'Hard Rock Stadium',      city:'Miami 🇺🇸'},
+  'ESP-KSA': {stadium:'Mercedes-Benz Stadium',  city:'Atlanta 🇺🇸'},
+  'URU-CPV': {stadium:'Hard Rock Stadium',      city:'Miami 🇺🇸'},
+  'CPV-KSA': {stadium:'NRG Stadium',            city:'Houston 🇺🇸'},
+  'URU-ESP': {stadium:'Estadio AKRON',          city:'Guadalajara 🇲🇽'},
+  // Grupo I
+  'FRA-SEN': {stadium:'MetLife Stadium',        city:'Nueva Jersey 🇺🇸'},
+  'IRQ-NOR': {stadium:'Gillette Stadium',       city:'Boston 🇺🇸'},
+  'FRA-IRQ': {stadium:'Gillette Stadium',       city:'Boston 🇺🇸'},
+  'NOR-SEN': {stadium:'MetLife Stadium',        city:'Nueva Jersey 🇺🇸'},
+  'NOR-FRA': {stadium:'Gillette Stadium',       city:'Boston 🇺🇸'},
+  'SEN-IRQ': {stadium:'BMO Field',              city:'Toronto 🇨🇦'},
+  // Grupo J
+  'ARG-DZA': {stadium:'Arrowhead Stadium',      city:'Kansas City 🇺🇸'},
+  'AUT-JOR': {stadium:'Levi\'s Stadium',        city:'San Francisco 🇺🇸'},
+  'ARG-AUT': {stadium:'AT&T Stadium',           city:'Dallas 🇺🇸'},
+  'JOR-DZA': {stadium:'Levi\'s Stadium',        city:'San Francisco 🇺🇸'},
+  'DZA-AUT': {stadium:'Arrowhead Stadium',      city:'Kansas City 🇺🇸'},
+  'JOR-ARG': {stadium:'AT&T Stadium',           city:'Dallas 🇺🇸'},
+  // Grupo K
+  'POR-COD': {stadium:'NRG Stadium',            city:'Houston 🇺🇸'},
+  'UZB-COL': {stadium:'Estadio Azteca',         city:'Ciudad de México 🇲🇽'},
+  'POR-UZB': {stadium:'NRG Stadium',            city:'Houston 🇺🇸'},
+  'COL-COD': {stadium:'Estadio AKRON',          city:'Guadalajara 🇲🇽'},
+  'COL-POR': {stadium:'Hard Rock Stadium',      city:'Miami 🇺🇸'},
+  'COD-UZB': {stadium:'Mercedes-Benz Stadium',  city:'Atlanta 🇺🇸'},
+  // Grupo L
+  'ENG-CRO': {stadium:'AT&T Stadium',           city:'Dallas 🇺🇸'},
+  'GHA-PAN': {stadium:'BMO Field',              city:'Toronto 🇨🇦'},
+  'ENG-GHA': {stadium:'Gillette Stadium',       city:'Boston 🇺🇸'},
+  'PAN-CRO': {stadium:'BMO Field',              city:'Toronto 🇨🇦'},
+  'CRO-GHA': {stadium:'Lincoln Financial Field',city:'Filadelfia 🇺🇸'},
+  'PAN-ENG': {stadium:'MetLife Stadium',        city:'Nueva Jersey 🇺🇸'},
 };
 
 function venueLabel(m) {
-  const v = m.venue || m.homeTeam?.venue || '';
-  if (!v) return '—';
-  const city = VENUE_CITY[v];
-  return city ? `${v} · ${city}` : v;
+  const key = `${m.homeTeam?.tla}-${m.awayTeam?.tla}`;
+  const v = MATCH_VENUE[key];
+  if (v) return `${v.stadium} · ${v.city}`;
+  // fallback to API venue field if available
+  return m.venue || '—';
 }
 
 /* ══════════════════════════════════════════
