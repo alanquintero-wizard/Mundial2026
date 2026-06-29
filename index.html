@@ -114,6 +114,37 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
 .pts{font-weight:700;color:var(--text);}
 .qualify-note{font-size:10px;color:var(--green);padding:5px 10px;}
 
+/* BRACKET */
+.bracket-section{margin-bottom:20px;}
+.bracket-round-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:0.8px;margin:18px 0 8px;padding-bottom:5px;border-bottom:0.5px solid var(--border);}
+.bracket-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.bracket-slot{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--rs);padding:9px 12px;display:flex;flex-direction:column;gap:5px;}
+.bracket-slot.tbd{opacity:0.5;}
+.bracket-matchup{display:flex;align-items:center;justify-content:space-between;font-size:12px;}
+.bracket-team{display:flex;align-items:center;gap:5px;font-family:var(--display);font-size:14px;font-weight:700;}
+.bracket-team.winner{color:var(--gold);}
+.bracket-score{font-family:var(--display);font-size:14px;font-weight:800;color:var(--text2);}
+.bracket-score.winner{color:var(--gold);}
+.bracket-label{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;}
+.bracket-vs{font-size:10px;color:var(--text3);}
+
+/* CHAT */
+.chat-wrap{display:flex;flex-direction:column;height:calc(100dvh - 160px);}
+.chat-context{font-size:10px;color:var(--text3);background:var(--surface);border:0.5px solid var(--border);border-radius:var(--rs);padding:8px 12px;margin-bottom:12px;line-height:1.5;}
+.chat-messages{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:8px;}
+.chat-msg{padding:10px 13px;border-radius:var(--r);font-size:13px;line-height:1.5;max-width:90%;}
+.chat-msg.user{background:var(--gold-dim);border:0.5px solid rgba(245,200,66,0.2);color:var(--text);align-self:flex-end;}
+.chat-msg.assistant{background:var(--surface);border:0.5px solid var(--border);color:var(--text2);align-self:flex-start;}
+.chat-msg.thinking{color:var(--text3);font-style:italic;}
+.chat-input-row{display:flex;gap:8px;padding-top:8px;border-top:0.5px solid var(--border);}
+.chat-input{flex:1;background:var(--surface);border:0.5px solid var(--border2);border-radius:var(--rs);padding:10px 12px;font-size:13px;color:var(--text);font-family:var(--font);outline:none;resize:none;}
+.chat-input:focus{border-color:var(--gold);}
+.chat-send{padding:10px 14px;background:var(--gold);color:#0a0c10;border:none;border-radius:var(--rs);font-weight:700;font-size:13px;cursor:pointer;font-family:var(--font);flex-shrink:0;}
+.chat-send:disabled{opacity:0.5;cursor:default;}
+
+/* ── MATCH PHASE LABEL ── */
+.match-phase{font-size:9px;color:var(--blue);font-weight:600;text-transform:uppercase;letter-spacing:0.4px;}
+
 /* LOADING SKELETON */
 .skeleton{background:linear-gradient(90deg,var(--surface) 25%,var(--surface2) 50%,var(--surface) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:var(--rs);height:90px;margin-bottom:8px;}
 @keyframes shimmer{0%{background-position:200% 0;}100%{background-position:-200% 0;}}
@@ -145,12 +176,27 @@ body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14
   <button class="tab" onclick="switchTab('calendario',this)">📅 Calendario</button>
   <button class="tab" onclick="switchTab('resultados',this)">🏅 Resultados</button>
   <button class="tab" onclick="switchTab('grupos',this)">📊 Grupos</button>
+  <button class="tab" onclick="switchTab('bracket',this)">🏆 Bracket</button>
+  <button class="tab" onclick="switchTab('chat',this)">🤖 Asistente</button>
 </div>
 
 <div class="panel active" id="panel-hoy"><div id="hoy-content"><div class="skeleton"></div><div class="skeleton"></div></div></div>
 <div class="panel" id="panel-calendario"><div id="cal-content"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
 <div class="panel" id="panel-resultados"><div id="res-content"><div class="skeleton"></div><div class="skeleton"></div></div></div>
 <div class="panel" id="panel-grupos"><div class="grupos-grid" id="grupos-content"><div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div></div></div>
+<div class="panel" id="panel-bracket"><div id="bracket-content"><div class="skeleton"></div><div class="skeleton"></div></div></div>
+<div class="panel" id="panel-chat">
+  <div class="chat-wrap">
+    <div class="chat-context">🤖 Asistente del Mundial 2026 · Conectado a Claude · Tiene acceso al estado actual del torneo</div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="chat-msg assistant">¡Hola! Soy tu asistente del Mundial 2026. Puedo responder preguntas como "¿contra quién juega México en 8vos?" o "¿quién lidera el Grupo A?". ¿En qué te ayudo?</div>
+    </div>
+    <div class="chat-input-row">
+      <textarea class="chat-input" id="chat-input" rows="1" placeholder="Pregunta algo del Mundial…" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat();}"></textarea>
+      <button class="chat-send" id="chat-send" onclick="sendChat()">↑</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ══════════════════════════════════════════
@@ -362,7 +408,14 @@ function matchCard(m) {
   const aName = m.awayTeam?.name || atla;
   const hFlag = flag(htla);
   const aFlag = flag(atla);
-  const group = m.group ? m.group.replace('GROUP_','Grupo ') : (m.stage || '');
+  const STAGE_ES = {
+    'GROUP_STAGE':'Fase de Grupos','LAST_16':'16avos de Final',
+    'QUARTER_FINALS':'Cuartos de Final','SEMI_FINALS':'Semifinales',
+    'THIRD_PLACE':'3er y 4to Lugar','FINAL':'Final',
+  };
+  const stageRaw = m.stage || '';
+  const stageLabel = STAGE_ES[stageRaw] || stageRaw.replace(/_/g,' ');
+  const group = m.group ? `Grupo ${m.group.replace('GROUP_','')} · ${stageLabel}` : stageLabel;
 
   const done   = status === 'FINISHED';
   const live   = status === 'IN_PLAY' || status === 'PAUSED';
@@ -500,6 +553,11 @@ function renderCalendario() {
     html += dayBlock(date, byDate[date], date === today, date === today, 'cal');
   });
   document.getElementById('cal-content').innerHTML = html || '<div class="empty">Sin datos</div>';
+  // Auto-scroll to today
+  setTimeout(() => {
+    const todayEl = document.getElementById(`cal-${today}`);
+    if (todayEl) todayEl.closest('.day-block')?.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 100);
 }
 
 /* ══════════════════════════════════════════
@@ -694,6 +752,175 @@ function renderAll() {
   renderCalendario();
   renderResultados();
   renderGrupos();
+  renderBracket();
+}
+
+/* ══════════════════════════════════════════
+   BRACKET
+══════════════════════════════════════════ */
+function renderBracket() {
+  const groups = buildStandingsFromMatches();
+  // Build qualifiers map: groupKey -> [1st, 2nd]
+  const q = {};
+  Object.entries(groups).forEach(([g, rows]) => {
+    q[g] = rows.slice(0,2).map(r => ({tla:r.tla, name:r.name||r.tla}));
+  });
+  const slot = (g, pos) => {
+    const t = q[g]?.[pos];
+    return t ? `<span class="bracket-team">${flag(t.tla)} ${t.name}</span>` : `<span class="bracket-team" style="color:var(--text3);">Por definir</span>`;
+  };
+  // R16 matchups per FIFA WC 2026 format
+  // 1A vs 2B, 1C vs 2D, 1E vs 2F, 1G vs 2H, 1I vs 2J, 1K vs 2L, 1B vs 2A, 1D vs 2C
+  // + 4 best 3rd place teams (TBD structure)
+  const r16 = [
+    {label:'1A vs 2B', a:{g:'A',p:0}, b:{g:'B',p:1}},
+    {label:'1C vs 2D', a:{g:'C',p:0}, b:{g:'D',p:1}},
+    {label:'1E vs 2F', a:{g:'E',p:0}, b:{g:'F',p:1}},
+    {label:'1G vs 2H', a:{g:'G',p:0}, b:{g:'H',p:1}},
+    {label:'1I vs 2J', a:{g:'I',p:0}, b:{g:'J',p:1}},
+    {label:'1K vs 2L', a:{g:'K',p:0}, b:{g:'L',p:1}},
+    {label:'1B vs 2A', a:{g:'B',p:0}, b:{g:'A',p:1}},
+    {label:'1D vs 2C', a:{g:'D',p:0}, b:{g:'C',p:1}},
+  ];
+  // Check if any group stage matches remain
+  const groupDone = allMatches.filter(m => m.stage==='GROUP_STAGE' && m.status!=='FINISHED').length === 0;
+  const r16Matches = allMatches.filter(m => m.stage==='LAST_16');
+  const qfMatches  = allMatches.filter(m => m.stage==='QUARTER_FINALS');
+  const sfMatches  = allMatches.filter(m => m.stage==='SEMI_FINALS');
+  const finalMatch = allMatches.find(m => m.stage==='FINAL');
+
+  function matchSlot(m) {
+    if (!m) return '<div class="bracket-slot tbd"><div class="bracket-matchup"><span class="bracket-team">Por definir</span><span class="bracket-vs">vs</span><span class="bracket-team">Por definir</span></div></div>';
+    const hs = m.score?.fullTime?.home, as = m.score?.fullTime?.away;
+    const done = m.status==='FINISHED';
+    const hw = done && hs>as ? 'winner' : '';
+    const aw = done && as>hs ? 'winner' : '';
+    return `<div class="bracket-slot">
+      <div class="bracket-matchup">
+        <span class="bracket-team ${hw}">${flag(m.homeTeam?.tla)} ${m.homeTeam?.shortName||m.homeTeam?.name||'?'}</span>
+        ${done ? `<span class="bracket-score ${hw}">${hs}</span>` : ''}
+      </div>
+      <div class="bracket-vs">${done?'Final':localTime(m.utcDate)}</div>
+      <div class="bracket-matchup">
+        <span class="bracket-team ${aw}">${flag(m.awayTeam?.tla)} ${m.awayTeam?.shortName||m.awayTeam?.name||'?'}</span>
+        ${done ? `<span class="bracket-score ${aw}">${as}</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  let html = '';
+  // R16
+  html += '<div class="bracket-round-label">16avos de Final</div><div class="bracket-grid">';
+  if (r16Matches.length) {
+    r16Matches.forEach(m => { html += matchSlot(m); });
+  } else {
+    r16.forEach(pair => {
+      const ta = q[pair.a.g]?.[pair.a.p];
+      const tb = q[pair.b.g]?.[pair.b.p];
+      const tbd = !groupDone || !ta || !tb;
+      html += `<div class="bracket-slot ${tbd?'tbd':''}">
+        <div class="bracket-matchup"><span class="bracket-team">${ta?flag(ta.tla)+' '+ta.name:'?'}</span></div>
+        <div class="bracket-vs">vs</div>
+        <div class="bracket-matchup"><span class="bracket-team">${tb?flag(tb.tla)+' '+tb.name:'?'}</span></div>
+        <div class="bracket-label">${pair.label}</div>
+      </div>`;
+    });
+  }
+  html += '</div>';
+  // QF
+  html += '<div class="bracket-round-label">Cuartos de Final</div><div class="bracket-grid">';
+  if (qfMatches.length) { qfMatches.forEach(m => { html += matchSlot(m); }); }
+  else { for(let i=0;i<4;i++) html += matchSlot(null); }
+  html += '</div>';
+  // SF
+  html += '<div class="bracket-round-label">Semifinales</div><div class="bracket-grid">';
+  if (sfMatches.length) { sfMatches.forEach(m => { html += matchSlot(m); }); }
+  else { for(let i=0;i<2;i++) html += matchSlot(null); }
+  html += '</div>';
+  // Final
+  html += '<div class="bracket-round-label">Final · 19 julio 2026 · MetLife Stadium</div>';
+  html += matchSlot(finalMatch||null);
+
+  document.getElementById('bracket-content').innerHTML = html;
+}
+
+/* ══════════════════════════════════════════
+   CHAT — Claude API
+══════════════════════════════════════════ */
+let chatHistory = [];
+
+function buildTournamentContext() {
+  const groups = buildStandingsFromMatches();
+  let ctx = 'Estado actual del Mundial 2026 (México, EE.UU., Canadá):\n\n';
+  ctx += 'FASE DE GRUPOS — POSICIONES:\n';
+  Object.entries(groups).forEach(([g, rows]) => {
+    ctx += `Grupo ${g}: `;
+    ctx += rows.map((r,i) => `${i+1}°${r.name||r.tla}(${r.pts}pts)`).join(', ');
+    ctx += '\n';
+  });
+  const finished = allMatches.filter(m=>m.status==='FINISHED');
+  ctx += `\nPartidos jugados: ${finished.length}\n`;
+  const r16 = allMatches.filter(m=>m.stage==='LAST_16');
+  if (r16.length) {
+    ctx += '\n16AVOS DE FINAL:\n';
+    r16.forEach(m => {
+      const hs=m.score?.fullTime?.home, as=m.score?.fullTime?.away;
+      ctx += `${m.homeTeam?.name} ${m.status==='FINISHED'?hs+'-'+as:'vs'} ${m.awayTeam?.name}\n`;
+    });
+  }
+  ctx += '\nEl sistema de clasificación es: top 2 de cada grupo + 8 mejores terceros = 32 equipos en 16avos.';
+  ctx += '\nLos cruces de 16avos son: 1A vs 2B, 1C vs 2D, 1E vs 2F, 1G vs 2H, 1I vs 2J, 1K vs 2L, 1B vs 2A, 1D vs 2C.';
+  return ctx;
+}
+
+async function sendChat() {
+  const input = document.getElementById('chat-input');
+  const sendBtn = document.getElementById('chat-send');
+  const messages = document.getElementById('chat-messages');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Add user message
+  input.value = '';
+  input.style.height = 'auto';
+  messages.innerHTML += `<div class="chat-msg user">${text}</div>`;
+  messages.scrollTop = messages.scrollHeight;
+
+  // Add thinking indicator
+  const thinkId = 'think-' + Date.now();
+  messages.innerHTML += `<div class="chat-msg thinking" id="${thinkId}">Pensando…</div>`;
+  messages.scrollTop = messages.scrollHeight;
+  sendBtn.disabled = true;
+
+  chatHistory.push({role:'user', content: text});
+
+  try {
+    const systemPrompt = `Eres un asistente experto del Mundial de Fútbol 2026 (México, EE.UU., Canadá). 
+Tienes acceso al estado actual del torneo. Responde en español, de forma concisa y directa.
+Contexto del torneo:\n${buildTournamentContext()}`;
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: chatHistory,
+      })
+    });
+    const data = await res.json();
+    const reply = data.content?.[0]?.text || 'No pude obtener una respuesta.';
+    chatHistory.push({role:'assistant', content: reply});
+
+    document.getElementById(thinkId).remove();
+    messages.innerHTML += `<div class="chat-msg assistant">${reply.replace(/\n/g,'<br>')}</div>`;
+  } catch(e) {
+    document.getElementById(thinkId).remove();
+    messages.innerHTML += `<div class="chat-msg assistant" style="color:var(--red);">Error conectando con Claude. Intenta de nuevo.</div>`;
+  }
+  sendBtn.disabled = false;
+  messages.scrollTop = messages.scrollHeight;
 }
 
 /* ══════════════════════════════════════════
@@ -704,6 +931,13 @@ function switchTab(name, btn) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('panel-' + name).classList.add('active');
+  if (name === 'calendario') {
+    setTimeout(() => {
+      const today = todayStr();
+      const el = document.getElementById(`cal-${today}`);
+      if (el) el.closest('.day-block')?.scrollIntoView({behavior:'smooth', block:'start'});
+    }, 50);
+  }
 }
 
 /* ══════════════════════════════════════════
