@@ -208,7 +208,7 @@ const WC_ID     = 2000;
 
 // Country code → flag emoji
 const FLAGS = {
-  'MEX':'🇲🇽','ZAF':'🇿🇦','KOR':'🇰🇷','CZE':'🇨🇿','CAN':'🇨🇦','BIH':'🇧🇦',
+  'MEX':'🇲🇽','RSA':'🇿🇦','KOR':'🇰🇷','CZE':'🇨🇿','CAN':'🇨🇦','BIH':'🇧🇦',
   'USA':'🇺🇸','PRY':'🇵🇾','QAT':'🇶🇦','SUI':'🇨🇭','BRA':'🇧🇷','MAR':'🇲🇦',
   'HTI':'🇭🇹','SCO':'🏴󠁧󠁢󠁳󠁣󠁴󠁿','AUS':'🇦🇺','TUR':'🇹🇷','GER':'🇩🇪','CUW':'🇨🇼',
   'NED':'🇳🇱','JPN':'🇯🇵','CIV':'🇨🇮','ECU':'🇪🇨','SWE':'🇸🇪','TUN':'🇹🇳',
@@ -301,11 +301,11 @@ function formatDateLabel(str) {
 ══════════════════════════════════════════ */
 const MATCH_VENUE = {
   // Grupo A
-  'MEX-ZAF': {stadium:'Estadio Azteca',        city:'Ciudad de México 🇲🇽'},
+  'MEX-RSA': {stadium:'Estadio Azteca',        city:'Ciudad de México 🇲🇽'},
   'KOR-CZE': {stadium:'Estadio AKRON',          city:'Guadalajara 🇲🇽'},
-  'CZE-ZAF': {stadium:'Mercedes-Benz Stadium',  city:'Atlanta 🇺🇸'},
+  'CZE-RSA': {stadium:'Mercedes-Benz Stadium',  city:'Atlanta 🇺🇸'},
   'MEX-KOR': {stadium:'Estadio AKRON',          city:'Guadalajara 🇲🇽'},
-  'ZAF-KOR': {stadium:'Estadio Tecnológico',    city:'Monterrey 🇲🇽'},
+  'RSA-KOR': {stadium:'Estadio Tecnológico',    city:'Monterrey 🇲🇽'},
   'CZE-MEX': {stadium:'Estadio Azteca',         city:'Ciudad de México 🇲🇽'},
   // Grupo B
   'CAN-BIH': {stadium:'BMO Field',              city:'Toronto 🇨🇦'},
@@ -409,9 +409,13 @@ function matchCard(m) {
   const hFlag = flag(htla);
   const aFlag = flag(atla);
   const STAGE_ES = {
-    'GROUP_STAGE':'Fase de Grupos','LAST_16':'16avos de Final',
-    'QUARTER_FINALS':'Cuartos de Final','SEMI_FINALS':'Semifinales',
-    'THIRD_PLACE':'3er y 4to Lugar','FINAL':'Final',
+    'GROUP_STAGE':'Fase de Grupos',
+    'LAST_32':'16avos de Final',
+    'LAST_16':'8avos de Final',
+    'QUARTER_FINALS':'Cuartos de Final',
+    'SEMI_FINALS':'Semifinales',
+    'THIRD_PLACE':'3er y 4to Lugar',
+    'FINAL':'Final',
   };
   const stageRaw = m.stage || '';
   const stageLabel = STAGE_ES[stageRaw] || stageRaw.replace(/_/g,' ');
@@ -588,7 +592,7 @@ function renderResultados() {
 // Manual group map — free tier API doesn't return group field per match
 const GROUP_MAP = {
   // Group A
-  'MEX':'A','ZAF':'A','KOR':'A','CZE':'A',
+  'MEX':'A','RSA':'A','KOR':'A','CZE':'A',
   // Group B
   'CAN':'B','BIH':'B','QAT':'B','SUI':'B',
   // Group C
@@ -731,6 +735,15 @@ async function refreshAll() {
     // Fetch matches (all group stage)
     const mData = await apiFetch(`/competitions/${WC_ID}/matches?season=2026`);
     allMatches = (mData.matches || []).sort((a,b) => new Date(a.utcDate) - new Date(b.utcDate));
+    // Debug: log unique stages and sample TLAs
+    const stages = [...new Set(allMatches.map(m=>m.stage))];
+    console.log('[WC] Stages:', stages);
+    const r32 = allMatches.filter(m=>m.stage==='LAST_32');
+    if(r32.length) {
+      console.log('[WC] LAST_32 sample:', r32.slice(0,3).map(m=>m.homeTeam?.tla+' vs '+m.awayTeam?.tla));
+    }
+    const groupSample = allMatches.filter(m=>m.stage==='GROUP_STAGE').slice(0,3);
+    console.log('[WC] GROUP TLAs sample:', groupSample.map(m=>m.homeTeam?.tla+' vs '+m.awayTeam?.tla));
 
 
     lastUpdate = new Date();
@@ -784,7 +797,7 @@ function renderBracket() {
   ];
   // Check if any group stage matches remain
   const groupDone = allMatches.filter(m => m.stage==='GROUP_STAGE' && m.status!=='FINISHED').length === 0;
-  const r16Matches = allMatches.filter(m => m.stage==='LAST_16');
+  const r16Matches = allMatches.filter(m => m.stage==='LAST_32');
   const qfMatches  = allMatches.filter(m => m.stage==='QUARTER_FINALS');
   const sfMatches  = allMatches.filter(m => m.stage==='SEMI_FINALS');
   const finalMatch = allMatches.find(m => m.stage==='FINAL');
@@ -860,7 +873,7 @@ function buildTournamentContext() {
   });
   const finished = allMatches.filter(m=>m.status==='FINISHED');
   ctx += `\nPartidos jugados: ${finished.length}\n`;
-  const r16 = allMatches.filter(m=>m.stage==='LAST_16');
+  const r16 = allMatches.filter(m=>m.stage==='LAST_32');
   if (r16.length) {
     ctx += '\n16AVOS DE FINAL:\n';
     r16.forEach(m => {
